@@ -2,8 +2,12 @@
 FROM maven:3.9.2-eclipse-temurin-17 AS build
 WORKDIR /app
 
-# Copiar arquivos do projeto
+# Copia o pom.xml e baixa dependências (cache)
 COPY pom.xml .
+RUN mvn dependency:go-offline -B
+
+# Copia o restante do código
+COPY src ./src
 
 # Build do projeto (gera o JAR)
 RUN mvn clean package -DskipTests
@@ -12,11 +16,8 @@ RUN mvn clean package -DskipTests
 FROM eclipse-temurin:17-jdk-alpine
 WORKDIR /app
 
-# Copiar o JAR do stage anterior
+# Copia o JAR do stage anterior
 COPY --from=build /app/target/*.jar app.jar
 
-# Porta exposta pelo Spring Boot
 EXPOSE 8080
-
-# Rodar o JAR
-CMD ["java", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-jar", "app.jar"]
